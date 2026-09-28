@@ -1,0 +1,5 @@
+*                 @org-skyward/sm-p01-deivi @org-skyward/codeowners(cw)
+/src/             @org-skyward/sm-p01-deivi @org-skyward/codeowners(cw)
+/docs/            @org-skyward/sm-p01-deivi @org-skyward/codeowners(cw)
+/.github/         @org-skyward/codeowners(cw)
+/docs/rubrica-evaluacion.md   @org-skyward/codeowners(cw)
