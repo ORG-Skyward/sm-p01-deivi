@@ -10,7 +10,7 @@
 
 ### 🛠️ Control de Versiones y Flujo de Trabajo
 - **Git Flow:** Ramas `main`, `develop`, y ramas de características `feature/nombre-tarea`.
-- **Pull Requests (PR):** Ningún código entra a `develop` sin la aprobación de al menos 1 compañero de equipo.
+- **Pull Requests (PR):** Ningún código entra a `develop` sin la aprobación de al menos 1 compañero de equipo. hola
 
 ### 🗄️ Base de Datos y Modelo Entidad-Relación
 - Principios de diseño de tablas: `Productos`, `Categorías`, `Proveedores`, `Ventas`, `DetalleVentas`.
