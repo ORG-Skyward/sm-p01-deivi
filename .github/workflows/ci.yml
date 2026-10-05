@@ -1,0 +1,24 @@
+name: Calculadora de Suma
+
+on:
+  push:
+    branches: [ "main", "feature/hola" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  realizar_suma:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Calcular e imprimir suma
+        run: |
+          NUM1=15
+          NUM2=25
+          RESULTADO=$((NUM1 + NUM2))
+          echo "----------------------------------------"
+          echo "El resultado de sumar $NUM1 + $NUM2 es: $RESULTADO"
+          echo "----------------------------------------"
