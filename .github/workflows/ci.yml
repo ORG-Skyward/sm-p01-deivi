@@ -2,7 +2,7 @@ name: Calculadora de Suma
 
 on:
   push:
-    branches: [ "main", "feature/hola" ]
+    branches: [ "main", "feature/actualizado" ]
   pull_request:
     branches: [ "main" ]
 
