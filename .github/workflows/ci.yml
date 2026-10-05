@@ -3,8 +3,10 @@ name: Deploy Web Page CI/CD
 on:
   push:
     branches: [ "main", "feature/actualizado" ]
+  pull_request:
+    branches: [ "main" ]
 
-# Permisos necesarios para que GitHub pueda publicar en Pages
+# Permisos necesarios para que GitHub Pages funcione correctamente
 permissions:
   contents: read
   pages: write
@@ -35,8 +37,15 @@ jobs:
     - name: Subir artefacto HTML
       uses: actions/upload-pages-artifact@v3
       with:
-        path: '.' # Toma el index.html que genera tu Python en la raíz
+        path: '.' # Toma el archivo index.html generado por Python en la raíz
 
     - name: Desplegar en GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
+
+    - name: Mostrar enlace de la página
+      run: |
+        echo "===================================================="
+        echo " ¡Despliegue exitoso!"
+        echo " Tu página web está disponible en: ${{ steps.deployment.outputs.page_url }}"
+        echo "===================================================="

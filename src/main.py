@@ -1,7 +1,6 @@
 # src/main.py
 
 def generar_pagina_interactiva():
-    # Todo el código HTML, CSS y JavaScript de la calculadora está guardado aquí dentro de Python
     html_content = """<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -99,11 +98,11 @@ def generar_pagina_interactiva():
 </html>
 """
     
-    # Python escribe este texto en un archivo index.html automáticamente
+    # Python escribe este contenido en un archivo index.html en la raíz
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
     
-    print("¡El archivo index.html con las cajas de texto y el botón se generó exitosamente desde Python!")
+    print("¡El archivo index.html interactivo se generó exitosamente!")
 
 if __name__ == "__main__":
     generar_pagina_interactiva()
