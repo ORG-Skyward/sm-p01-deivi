@@ -24,6 +24,6 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    - name: Ejecutar script de Python
+    - name: Ejecutar script desde src
       run: |
-        python -c "num1 = 15; num2 = 25; print(f'El resultado de sumar {num1} + {num2} es: {num1 + num2}')"
+        python src/main.py
