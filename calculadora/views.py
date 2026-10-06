@@ -1,20 +1,18 @@
 from django.shortcuts import render
 
-def index_calculadora(request):
+def index(request):
     resultado = None
-    num1 = None
-    num2 = None
-    
-    if request.method == 'POST':
+    num1 = request.GET.get('num1', '')
+    num2 = request.GET.get('num2', '')
+
+    if num1 != '' and num2 != '':
         try:
-            num1 = float(request.POST.get('num1', 0))
-            num2 = float(request.POST.get('num2', 0))
-            resultado = num1 + num2
+            resultado = float(num1) + float(num2)
         except ValueError:
-            resultado = "Por favor ingresa números válidos"
-            
+            resultado = "Error: Ingresa números válidos"
+
     return render(request, 'calculadora/index.html', {
-        'resultado': resultado,
         'num1': num1,
-        'num2': num2
+        'num2': num2,
+        'resultado': resultado
     })
