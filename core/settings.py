@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-7b^o#@g^8)1!u$af+u7$x4-)5i%kn#6pc^$63w5)pwhwr@r4ck
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['sm-p01-deivi.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -93,8 +93,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
