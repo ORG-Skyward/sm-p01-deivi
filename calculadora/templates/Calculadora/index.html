@@ -65,12 +65,12 @@
         <form method="POST">
             {% csrf_token %}
             <div class="input-group">
-                <label for="num1">Primer Número:</label>
+                <label for="num1">Primer Numero:</label>
                 <input type="number" step="any" name="num1" value="{{ num1|default:'' }}" placeholder="Ej. 15" required>
             </div>
             
             <div class="input-group">
-                <label for="num2">Segundo Número:</label>
+                <label for="num2">Segundo Numero:</label>
                 <input type="number" step="any" name="num2" value="{{ num2|default:'' }}" placeholder="Ej. 25" required>
             </div>
             
