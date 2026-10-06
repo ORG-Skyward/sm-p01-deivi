@@ -1,4 +1,4 @@
-name: Deploy Web Page CI/CD
+name: Django CI Pipeline
 
 on:
   push:
@@ -6,19 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
-# Permisos necesarios para que GitHub Pages funcione correctamente
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
+    
     steps:
     - name: Descargar código del repositorio
       uses: actions/checkout@v4
@@ -28,24 +19,11 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Ejecutar script de Python para crear el HTML
-      run: python src/main.py
-
-    - name: Configurar GitHub Pages
-      uses: actions/configure-pages@v4
-
-    - name: Subir artefacto HTML
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: '.' # Toma el archivo index.html generado por Python en la raíz
-
-    - name: Desplegar en GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
-
-    - name: Mostrar enlace de la página
+    - name: Instalar dependencias y Django
       run: |
-        echo "===================================================="
-        echo " ¡Despliegue exitoso!"
-        echo " Tu página web está disponible en: ${{ steps.deployment.outputs.page_url }}"
-        echo "===================================================="
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Ejecutar pruebas y verificar el proyecto
+      run: |
+        python manage.py test
