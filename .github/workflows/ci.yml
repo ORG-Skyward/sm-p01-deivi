@@ -27,7 +27,7 @@ jobs:
     needs: test_calculadora
     environment:
       name: Django CI Pipeline
-      url: https://ORG-Skyward.github.io/sm-p01-deivi/   # <--- Cambiado aquí para que abra la calculadora
+      url: https://sm-p01-deivi.onrender.com/calculadora/   # <--- Tu URL activa de Render
     steps:
       - name: Descargar código del repositorio
         uses: actions/checkout@v4
