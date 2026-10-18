@@ -131,9 +131,10 @@
       // 1. Inicializar mapa centrado en Popayán, Colombia
       var map = L.map("map").setView([2.4419, -76.6063], 14);
 
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      // Usar OpenStreetMap Francia para evitar bloqueos de servidores en la nube
+      L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", {
+        maxZoom: 20,
+        attribution: '&copy; OpenStreetMap France | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
 
       var routingControl = null;
