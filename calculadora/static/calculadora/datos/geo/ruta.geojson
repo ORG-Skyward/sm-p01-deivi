@@ -1,0 +1,19 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Ruta Principal Popayán - Centro"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-76.6063, 2.4419],
+          [-76.6020, 2.4450],
+          [-76.5980, 2.4550]
+        ]
+      }
+    }
+  ]
+}

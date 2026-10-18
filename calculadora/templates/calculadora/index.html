@@ -1,89 +1,182 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Django - GestioCore</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .card {
-            background: white;
-            padding: 30px 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            text-align: center;
-            width: 320px;
-        }
-        h2 { color: #4a5568; margin-bottom: 20px; }
-        .input-group {
-            margin-bottom: 15px;
-            text-align: left;
-        }
-        label { display: block; font-size: 14px; color: #718096; margin-bottom: 5px; font-weight: 600; }
-        input {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        button {
-            background: #319795;
-            color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-            transition: background 0.3s;
-        }
-        button:hover { background: #2c7a7b; }
-        .result {
-            font-size: 20px;
-            color: #2b6cb0;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h2>Calculadora Django</h2>
-        
-        <form method="POST">
-            {% csrf_token %}
-            <div class="input-group">
-                <label for="num1">Primer Numero:</label>
-                <input type="number" step="any" name="num1" value="{{ num1|default:'' }}" placeholder="Ej. 15" required>
-            </div>
-            
-            <div class="input-group">
-                <label for="num2">Segundo Numero:</label>
-                <input type="number" step="any" name="num2" value="{{ num2|default:'' }}" placeholder="Ej. 25" required>
-            </div>
-            
-            <button type="submit">Calcular Suma</button>
-        </form>
-        
-        <div class="result" id="resultado">
-            {% if resultado is not None %}
-                Resultado: {{ resultado }}
-            {% else %}
-                Resultado: --
-            {% endif %}
+  <head>
+    <meta charset="UTF-8" />
+    <title>Calculadora Django - Multimedia y Rutas por Coordenadas</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{% static 'calculadora/pwa/manifest.json' %}" />
+
+    <!-- Hoja de Estilos Externa -->
+    <link rel="stylesheet" href="{% static 'calculadora/css/estilo.css' %}" />
+
+    <!-- Estilos de Leaflet y Leaflet Routing Machine -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <!-- 1. SECCIÓN CALCULADORA -->
+      <h2>Calculadora Django</h2>
+      <form method="POST">
+        {% csrf_token %}
+        <label>Primer Número:</label>
+        <input
+          type="number"
+          name="num1"
+          value="{{ num1 }}"
+          step="any"
+          required
+        />
+
+        <label>Segundo Número:</label>
+        <input
+          type="number"
+          name="num2"
+          value="{{ num2 }}"
+          step="any"
+          required
+        />
+
+        <button type="submit">Calcular Suma</button>
+      </form>
+
+      <h3>
+        Resultado: {% if resultado is not None %}{{ resultado }}{% else %}--{% endif %}
+      </h3>
+
+      <!-- 2. SECCIÓN MULTIMEDIA -->
+      <div class="section-box">
+        <h3>Sección Multimedia</h3>
+
+        <div class="media-box">
+          <p><strong>Imagen Estática (`imagenes/banner.jpg`):</strong></p>
+          <img
+            src="{% static 'calculadora/imagenes/banner.jpg' %}"
+            alt="Banner de la App"
+            width="400"
+          />
         </div>
+
+        <div class="media-box">
+          <p><strong>Video Demostrativo (`videos/demo.mp4`):</strong></p>
+          <video width="450" controls>
+            <source
+              src="{% static 'calculadora/videos/demo.mp4' %}"
+              type="video/mp4"
+            />
+            Tu navegador no soporta la reproducción de video.
+          </video>
+        </div>
+
+        <div class="media-box">
+          <p><strong>Audio Institucional (`audios/musica.mp3`):</strong></p>
+          <audio controls>
+            <source
+              src="{% static 'calculadora/audios/musica.mp3' %}"
+              type="audio/mpeg"
+            />
+            Tu navegador no soporta el elemento de audio.
+          </audio>
+        </div>
+      </div>
+
+      <!-- 3. SECCIÓN MAPA Y RUTAS POR COORDENADAS -->
+      <div class="section-box">
+        <h3>Generador de Rutas por Coordenadas</h3>
+        <p>
+          Ingresa las coordenadas de origen y destino para trazar la ruta exacta sobre la carretera:
+        </p>
+
+        <div class="route-inputs">
+          <div>
+            <label>Origen (Lat, Lon):</label>
+            <input
+              type="text"
+              id="start_coords"
+              value="2.4419, -76.6063"
+              placeholder="Ej: 2.4419, -76.6063"
+            />
+          </div>
+          <div>
+            <label>Destino (Lat, Lon):</label>
+            <input
+              type="text"
+              id="end_coords"
+              value="2.4550, -76.5980"
+              placeholder="Ej: 2.4550, -76.5980"
+            />
+          </div>
+          <button type="button" class="btn-route" onclick="trazarRutaPersonalizada()">
+            Generar Ruta en Carretera
+          </button>
+        </div>
+
+        <div id="map"></div>
+      </div>
     </div>
-</body>
+
+    <!-- Scripts de Leaflet y Leaflet Routing Machine -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+    <script>
+      // 1. Inicializar mapa centrado en Popayán, Colombia
+      var map = L.map("map").setView([2.4419, -76.6063], 14);
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
+
+      var routingControl = null;
+
+      // 2. Función para trazar la ruta limpia basada en las coordenadas ingresadas por el usuario
+      function trazarRutaPersonalizada() {
+        var startVal = document.getElementById("start_coords").value.split(",");
+        var endVal = document.getElementById("end_coords").value.split(",");
+
+        if (startVal.length !== 2 || endVal.length !== 2) {
+          alert("Ingresa coordenadas válidas separadas por coma.");
+          return;
+        }
+
+        var startLat = parseFloat(startVal[0].trim());
+        var startLng = parseFloat(startVal[1].trim());
+        var endLat = parseFloat(endVal[0].trim());
+        var endLng = parseFloat(endVal[1].trim());
+
+        // Eliminar ruta anterior si ya existe una dibujada
+        if (routingControl) {
+          map.removeControl(routingControl);
+        }
+
+        // Crear la nueva ruta directa sobre las vías sin panel de instrucciones
+        routingControl = L.Routing.control({
+          waypoints: [
+            L.latLng(startLat, startLng),
+            L.latLng(endLat, endLng)
+          ],
+          routeWhileDragging: false,
+          addWaypoints: false,
+          draggableWaypoints: false,
+          fitSelectedRoutes: true,
+          show: false, // Oculta el panel lateral de texto/instrucciones tipo Google Maps
+          lineOptions: {
+            styles: [{ color: '#007bff', opacity: 0.85, weight: 6 }]
+          }
+        }).addTo(map);
+      }
+
+      // Generar una ruta inicial al cargar la página
+      trazarRutaPersonalizada();
+    </script>
+  </body>
 </html>

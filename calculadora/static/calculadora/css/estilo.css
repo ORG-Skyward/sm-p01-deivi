@@ -1,0 +1,77 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 40px;
+    background: #f4f4f9;
+    color: #333;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.section-box {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #eee;
+}
+
+#map {
+    height: 450px;
+    width: 100%;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.media-box {
+    text-align: center;
+    margin: 15px 0;
+}
+
+video, audio, img {
+    max-width: 100%;
+    border-radius: 6px;
+}
+
+.route-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.route-inputs label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.route-inputs input {
+    width: 90%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.btn-route {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    grid-column: span 2;
+    transition: background 0.3s;
+}
+
+.btn-route:hover {
+    background-color: #0056b3;
+}
