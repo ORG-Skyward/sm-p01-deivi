@@ -48,16 +48,16 @@
           required
         />
 
-        <button type="submit">Calcular Suma</button>
+        <button type="submit" name="calcular">Calcular Suma</button>
       </form>
 
       <h3>
         Resultado: {% if resultado is not None %}{{ resultado }}{% else %}--{% endif %}
       </h3>
 
-      <!-- 2. SECCIÓN MULTIMEDIA -->
+      <!-- 2. SECCIÓN MULTIMEDIA ESTÁTICA -->
       <div class="section-box">
-        <h3>Sección Multimedia</h3>
+        <h3>Sección Multimedia Estática</h3>
 
         <div class="media-box">
           <p><strong>Imagen Estática (`imagenes/banner.jpg`):</strong></p>
@@ -91,7 +91,46 @@
         </div>
       </div>
 
-      <!-- 3. SECCIÓN MODELO 3D INTERACTIVO -->
+      <!-- 3. SECCIÓN SUBIR ARCHIVOS A CARPETA MEDIA -->
+      <div class="section-box">
+        <h3>Gestor de Archivos (Carpeta Media)</h3>
+        <p>Sube fotos, videos, audios o documentos que se almacenarán en la carpeta <code>media/</code>:</p>
+
+        <form method="POST" enctype="multipart/form-data" class="upload-form">
+          {% csrf_token %}
+          <div style="width: 100%;">
+            <label>Título del archivo:</label>
+            <input type="text" name="titulo" placeholder="Ej: Documento SENA o Foto" required style="width: 100%;" />
+          </div>
+
+          <div style="width: 100%; margin-top: 10px;">
+            <label>Seleccionar Archivo:</label>
+            <input type="file" name="archivo" required />
+          </div>
+
+          <button type="submit" name="subir_archivo" style="margin-top: 15px;">Subir a Servidor</button>
+        </form>
+
+        <h4 style="margin-top: 25px;">Archivos en Carpeta Media:</h4>
+        <div class="media-list">
+          {% if archivos_subidos %}
+            {% for item in archivos_subidos %}
+              <div class="media-item">
+                <p><strong>{{ item.titulo }}</strong> <small>({{ item.fecha_subida|date:"d/m/Y H:i" }})</small></p>
+                <p>
+                  <a href="{{ item.archivo.url }}" target="_blank" class="btn-download">
+                    📂 Ver / Descargar Archivo
+                  </a>
+                </p>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p style="text-align: center; color: #777;"><em>No hay archivos en la carpeta media todavía.</em></p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- 4. SECCIÓN MODELO 3D INTERACTIVO -->
       <div class="section-box">
         <h3>Modelo 3D Interactivo</h3>
         <p>
@@ -110,7 +149,7 @@
         </div>
       </div>
 
-      <!-- 4. SECCIÓN MAPA Y RUTAS POR COORDENADAS -->
+      <!-- 5. SECCIÓN MAPA Y RUTAS POR COORDENADAS -->
       <div class="section-box">
         <h3>Generador de Rutas por Coordenadas</h3>
         <p>
@@ -150,18 +189,16 @@
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
     <script>
-      // 1. Inicializar mapa centrado en Popayán, Colombia
+      // 1. Inicializar mapa centrado en Popayán, Colombia con OpenStreetMap Alemania
       var map = L.map("map").setView([2.4419, -76.6063], 14);
 
-      // Usar Esri World Street Map para garantizar visualización perfecta local y en Render
-      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+      L.tileLayer("https://tile.openstreetmap.de/{z}/{x}/{y}.png", {
         maxZoom: 19,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri TomTom, 2012',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
 
       var routingControl = null;
 
-      // 2. Función para trazar la ruta limpia basada en las coordenadas ingresadas por el usuario
       function trazarRutaPersonalizada() {
         var startVal = document.getElementById("start_coords").value.split(",");
         var endVal = document.getElementById("end_coords").value.split(",");
@@ -176,12 +213,10 @@
         var endLat = parseFloat(endVal[0].trim());
         var endLng = parseFloat(endVal[1].trim());
 
-        // Eliminar ruta anterior si ya existe una dibujada
         if (routingControl) {
           map.removeControl(routingControl);
         }
 
-        // Crear la nueva ruta directa sobre las vías sin panel de instrucciones
         routingControl = L.Routing.control({
           waypoints: [
             L.latLng(startLat, startLng),
@@ -191,14 +226,13 @@
           addWaypoints: false,
           draggableWaypoints: false,
           fitSelectedRoutes: true,
-          show: false, // Oculta el panel lateral de texto/instrucciones tipo Google Maps
+          show: false,
           lineOptions: {
             styles: [{ color: '#007bff', opacity: 0.85, weight: 6 }]
           }
         }).addTo(map);
       }
 
-      // Generar una ruta inicial al cargar la página
       trazarRutaPersonalizada();
     </script>
   </body>
