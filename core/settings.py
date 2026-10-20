@@ -3,6 +3,10 @@ Django settings for core project.
 """
 
 from pathlib import Path
+from django.db.backends.mysql.base import DatabaseWrapper
+
+# Desactiva la restricción estricta de versión de MySQL para que acepte versiones 8.0+
+DatabaseWrapper.check_database_version_supported = lambda self: None
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -54,9 +58,21 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    'default': { # PostgreSQL (la que creamos en pgAdmin)
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'proyecto',
+        'USER': 'postgres',
+        'PASSWORD': 'root',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    },
+    'mysql_db': { # MySQL
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'proyecto_mysql',
+        'USER': 'root',
+        'PASSWORD': 'root',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 
