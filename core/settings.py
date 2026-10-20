@@ -2,7 +2,9 @@
 Django settings for core project.
 """
 
+import os
 from pathlib import Path
+import dj_database_url
 from django.db.backends.mysql.base import DatabaseWrapper
 
 # Desactiva la restricción estricta de versión de MySQL para que acepte versiones 8.0+
@@ -57,8 +59,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+# Configuración de Bases de Datos (Local vs Producción en Render con Neon)
 DATABASES = {
-    'default': { # PostgreSQL (la que creamos en pgAdmin)
+    'default': {  # PostgreSQL (Local / pgAdmin)
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'proyecto',
         'USER': 'postgres',
@@ -66,7 +69,7 @@ DATABASES = {
         'HOST': 'localhost',
         'PORT': '5432',
     },
-    'mysql_db': { # MySQL
+    'mysql_db': {  # MySQL (Local)
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'proyecto_mysql',
         'USER': 'root',
@@ -75,6 +78,15 @@ DATABASES = {
         'PORT': '3306',
     }
 }
+
+# Si estamos en Render (o existe la variable DATABASE_URL), se sobrescribe 'default' con Neon en la nube
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    DATABASES['default'] = dj_database_url.config(
+        default=database_url,
+        conn_max_age=600,
+        ssl_require=True
+    )
 
 AUTH_PASSWORD_VALIDATORS = [
     {
