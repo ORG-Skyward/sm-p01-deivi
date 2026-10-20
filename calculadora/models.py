@@ -11,7 +11,7 @@ class HistorialCalculadora(models.Model):
         return f"{self.num1} + {self.num2} = {self.resultado}"
 
 
-# Modelo que ya tenías para la sección de gestor de archivos multimedia
+# Modelo para la sección de gestor de archivos multimedia
 class ArchivoMultimedia(models.Model):
     titulo = models.CharField(max_length=100)
     archivo = models.FileField(upload_to='archivos/')
