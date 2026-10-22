@@ -11,9 +11,11 @@ try:
     client = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=2000)
     db_mongo = client["calculadora_db"]
     archivos_mongo_collection = db_mongo["archivos_multimedia"]
+    historial_mongo_collection = db_mongo["historial_calculadora"]  # Colección para el historial en Mongo
 except Exception:
     client = None
     archivos_mongo_collection = None
+    historial_mongo_collection = None
 
 def index(request):
     resultado = None
@@ -29,11 +31,22 @@ def index(request):
                 db_choice = request.POST.get('db_choice', 'default')
                 resultado = num1 + num2
 
-                HistorialCalculadora.objects.using(db_choice).create(
-                    num1=num1,
-                    num2=num2,
-                    resultado=resultado
-                )
+                # Si es PostgreSQL o MySQL, usamos el ORM de Django
+                if db_choice in ['default', 'mysql_db']:
+                    HistorialCalculadora.objects.using(db_choice).create(
+                        num1=num1,
+                        num2=num2,
+                        resultado=resultado
+                    )
+                # Si es MongoDB, usamos pymongo directamente
+                elif db_choice == 'mongo_db':
+                    if historial_mongo_collection is not None:
+                        historial_mongo_collection.insert_one({
+                            "num1": num1,
+                            "num2": num2,
+                            "resultado": resultado,
+                            "fecha": datetime.now()
+                        })
             except ValueError:
                 resultado = "Error numérico"
 
@@ -45,7 +58,7 @@ def index(request):
 
             if archivo and titulo:
                 if db_choice in ['default', 'mysql_db']:
-                    # Guardar usando el ORM de Django en PostgreSQL (Neon) o MySQL
+                    # Guardar usando el ORM de Django en PostgreSQL o MySQL
                     ArchivoMultimedia.objects.using(db_choice).create(
                         titulo=titulo,
                         archivo=archivo
@@ -57,16 +70,13 @@ def index(request):
                         filename = fs.save(archivo.name, archivo)
                         file_url = fs.url(filename)
 
-                        # Guardar metadatos en MongoDB
+                        # Guardar metadatos en MongoDB con pymongo
                         archivos_mongo_collection.insert_one({
                             "titulo": titulo,
                             "nombre_archivo": filename,
                             "ruta": file_url,
                             "fecha": datetime.now()
                         })
-                    else:
-                        # Advertencia o acción alternativa si Mongo no está activo en producción
-                        pass
 
             return redirect('index')
 
