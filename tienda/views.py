@@ -1,3 +1,4 @@
+import os
 from django.shortcuts import render, redirect
 from django.db import connections
 from django.db.utils import OperationalError
@@ -14,7 +15,7 @@ from .models import (
 def get_productos_hibridos():
     """
     Obtiene y unifica los productos de PostgreSQL, MySQL y MongoDB (NoSQL)
-    blindando la lectura de campos para que nunca aparezcan vacíos.
+    con un timeout rápido para evitar bloqueos en entornos cloud como Render.
     """
     productos_rel = []
     productos_nosql = []
@@ -32,9 +33,15 @@ def get_productos_hibridos():
         except Exception as e:
             print(f"[ERROR BD] MySQL Workbench: {e}")
 
-    # 3. Obtener productos de MongoDB NoSQL (Blindado y compatible)
+    # 3. Obtener productos de MongoDB NoSQL (Protegido con timeout para producción)
     try:
-        client = pymongo.MongoClient('mongodb://localhost:27017/')
+        # Lee la variable de entorno MONGO_URI si existe (en Render), o usa localhost por defecto
+        mongo_uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
+        client = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=2000)
+        
+        # Forzar un ping rápido para comprobar conexión
+        client.admin.command('ping')
+        
         db = client['glitch_game_db']
         for doc in db['productos'].find():
             raw_nombre = (
@@ -55,7 +62,8 @@ def get_productos_hibridos():
                 'imagen': doc.get('imagen', None)
             })
     except Exception as e:
-        print(f"[AVISO BD] MongoDB no disponible: {e}")
+        # Si no hay MongoDB accesible (como en Render), la app continúa sin dar error 500
+        print(f"[AVISO BD] MongoDB no disponible en este entorno: {e}")
 
     return productos_rel, productos_nosql
 
@@ -121,7 +129,8 @@ def catalogo_view(request):
             if nombre and precio:
                 if db_choice == 'mongo_db':
                     try:
-                        client = pymongo.MongoClient('mongodb://localhost:27017/')
+                        mongo_uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
+                        client = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=2000)
                         db = client['glitch_game_db']
                         db['productos'].insert_one({
                             "nombre": nombre,
@@ -183,17 +192,13 @@ def ordenes_view(request):
     if request.method == 'POST':
         print(f"[DEBUG POST ORDEN]: {request.POST}")
         
-        # Obtener el cliente mediante el ID enviado por el HTML (<select name="cliente_id">)
         cliente_id = request.POST.get('cliente_id')
         cliente = None
         if cliente_id and cliente_id.isdigit():
             cliente = ClienteGamer.objects.filter(id=cliente_id).first()
 
         if cliente:
-            # Crear la orden principal
             orden = OrdenCompra.objects.create(cliente=cliente)
-            
-            # Capturar los productos empaquetados que vienen del checkbox: nombre|precio|origen
             productos_raw = request.POST.getlist('productos_seleccionados')
             
             items_creados = 0
@@ -216,7 +221,6 @@ def ordenes_view(request):
                         )
                         items_creados += 1
             
-            # Respaldo por si no seleccionó ningún ítem
             if items_creados == 0:
                 ItemOrden.objects.create(
                     orden=orden,
@@ -234,7 +238,6 @@ def ordenes_view(request):
     prods_rel, prods_nosql = get_productos_hibridos()
     ordenes = OrdenCompra.objects.prefetch_related('items').all()
     
-    # Calcular el precio total acumulado para cada orden en el historial
     for ord_obj in ordenes:
         ord_obj.total_orden = sum(float(item.precio) for item in ord_obj.items.all())
 
