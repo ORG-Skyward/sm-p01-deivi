@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Servidores - Glitch Game Hub</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'tienda/css/tienda_style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- BOTÓN DE MENÚ HAMBURGUESA -->
+        <button class="menu-btn" onclick="toggleMenu()">
+            ☰ Menú de Navegación
+        </button>
+
+        <h1>Monitoreo de Infraestructura Híbrida</h1>
+        <p>Estado actual de los servidores distribuidos en PostgreSQL, MySQL Workbench y MongoDB NoSQL.</p>
+        
+        <h3>Inventario Global por Base de Datos y Nodo</h3>
+        <table class="table-custom">
+            <tr><th>Videojuego</th><th>Precio</th><th>Servidor de Origen</th></tr>
+            {% for p in productos_relacionales %}
+                <tr>
+                    <td>{{ p.nombre }}</td>
+                    <td>${{ p.precio }} USD</td>
+                    <td><span style="color:var(--accent-blue); font-weight:bold;">{{ p.origen_db }}</span></td>
+                </tr>
+            {% endfor %}
+            {% for item in productos_nosql %}
+                <tr>
+                    <td>{{ item.titulo }}</td>
+                    <td>${{ item.precio }} USD</td>
+                    <td><span style="color:var(--accent-cyan); font-weight:bold;">MongoDB Local (NoSQL)</span></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3">No hay registros almacenados en los servidores.</td></tr>
+            {% endfor %}
+        </table>
+        <a href="{% url 'tienda_dashboard' %}" class="btn-volver">← Volver al Dashboard</a>
+    </div>
+
+    <!-- MENÚ LATERAL DESLIZANTE -->
+    <div class="sidebar-overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div class="sidebar-drawer" id="sidebar">
+        <div class="sidebar-header">
+            <h3>Glitch Game Hub</h3>
+            <button class="close-btn" onclick="toggleMenu()">✕</button>
+        </div>
+        <div class="sidebar-links">
+            <a href="{% url 'tienda_dashboard' %}" class="sidebar-link">📊 Dashboard General <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_clientes' %}" class="sidebar-link">👤 Directorio Clientes (1:1) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_catalogo' %}" class="sidebar-link">🕹️ Gestión de Catálogo (1:N) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_ordenes' %}" class="sidebar-link">🛒 Procesamiento Órdenes (N:N) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_servidores' %}" class="sidebar-link">🗄️ Infraestructura Híbrida <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_metricas' %}" class="sidebar-link">📈 Telemetría y Métricas <span class="arrow">→</span></a>
+        </div>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Catálogo - Glitch Game Hub</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'tienda/css/tienda_style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- BOTÓN DE MENÚ HAMBURGUESA -->
+        <button class="menu-btn" onclick="toggleMenu()">
+            ☰ Menú de Navegación
+        </button>
+
+        <h1>Gestión de Catálogo y Categorías (Relación 1:N)</h1>
+        <p>Publicación de videojuegos y distribución inteligente en servidores multi-base de datos.</p>
+        
+        {% if mensaje %}<div class="alert">{{ mensaje }}</div>{% endif %}
+
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div class="card-box" style="flex: 1; min-width: 280px;">
+                <h3>Crear Categoría</h3>
+                <form method="POST">
+                    {% csrf_token %}
+                    <label>Nombre:</label>
+                    <input type="text" name="nombre_categoria" required>
+                    <button type="submit" name="crear_categoria" class="btn-action">Guardar Categoría</button>
+                </form>
+            </div>
+            <div class="card-box" style="flex: 2; min-width: 280px;">
+                <h3>Publicar Videojuego</h3>
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <label>Título:</label>
+                    <input type="text" name="titulo" required>
+                    <label>Categoría:</label>
+                    <select name="categoria_id" required>
+                        {% for cat in categorias %}
+                            <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                        {% empty %}
+                            <option value="">Crea una categoría primero</option>
+                        {% endfor %}
+                    </select>
+                    <label>Precio ($):</label>
+                    <input type="number" step="0.01" name="precio" required>
+                    <label>Portada (Imagen):</label>
+                    <input type="file" name="archivo" accept="image/*">
+                    <label>Base de Datos Destino (Servidor):</label>
+                    <select name="db_choice">
+                        <option value="default">PostgreSQL (Local / Nube Neon)</option>
+                        <option value="mysql_db">MySQL Workbench</option>
+                        <option value="mongo_db">MongoDB NoSQL</option>
+                    </select>
+                    <button type="submit" name="subir_videojuego" class="btn-action">Publicar Juego</button>
+                </form>
+            </div>
+        </div>
+
+        <h3>Catálogo Visual de Videojuegos Híbridos</h3>
+        <div class="catalog-grid">
+            {% for prod in productos_relacionales %}
+                <div class="game-card">
+                    {% if prod.imagen %}
+                        <img src="{{ prod.imagen.url }}" alt="{{ prod.nombre }}" class="game-img">
+                    {% else %}
+                        <div class="game-img" style="display:flex; align-items:center; justify-content:center; color:#94a3b8;">Sin Portada</div>
+                    {% endif %}
+                    <div class="game-info">
+                        <strong>{{ prod.nombre }}</strong>
+                        <p style="color:var(--accent-emerald); font-weight:bold; margin: 5px 0;">${{ prod.precio }} USD</p>
+                        <small style="color:var(--text-muted);">{{ prod.origen_db }}</small>
+                    </div>
+                </div>
+            {% empty %}
+                <p><em>No hay juegos registrados en bases relacionales.</em></p>
+            {% endfor %}
+
+            {% for item in productos_nosql %}
+                <div class="game-card">
+                    {% if item.ruta %}
+                        <img src="{{ item.ruta }}" alt="{{ item.titulo }}" class="game-img">
+                    {% else %}
+                        <div class="game-img" style="display:flex; align-items:center; justify-content:center; color:#94a3b8;">Sin Portada</div>
+                    {% endif %}
+                    <div class="game-info">
+                        <strong>{{ item.titulo }}</strong>
+                        <p style="color:var(--accent-emerald); font-weight:bold; margin: 5px 0;">${{ item.precio }} USD</p>
+                        <small style="color:var(--accent-cyan);">MongoDB (NoSQL)</small>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <a href="{% url 'tienda_dashboard' %}" class="btn-volver">← Volver al Dashboard</a>
+    </div>
+
+    <!-- MENÚ LATERAL DESLIZANTE -->
+    <div class="sidebar-overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div class="sidebar-drawer" id="sidebar">
+        <div class="sidebar-header">
+            <h3>Glitch Game Hub</h3>
+            <button class="close-btn" onclick="toggleMenu()">✕</button>
+        </div>
+        <div class="sidebar-links">
+            <a href="{% url 'tienda_dashboard' %}" class="sidebar-link">📊 Dashboard General <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_clientes' %}" class="sidebar-link">👤 Directorio Clientes (1:1) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_catalogo' %}" class="sidebar-link">🕹️ Gestión de Catálogo (1:N) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_ordenes' %}" class="sidebar-link">🛒 Procesamiento Órdenes (N:N) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_servidores' %}" class="sidebar-link">🗄️ Infraestructura Híbrida <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_metricas' %}" class="sidebar-link">📈 Telemetría y Métricas <span class="arrow">→</span></a>
+        </div>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

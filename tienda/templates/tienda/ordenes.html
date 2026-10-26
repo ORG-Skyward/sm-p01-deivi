@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Procesamiento de Órdenes - Glitch Game Hub</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'tienda/css/tienda_style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- BOTÓN DE MENÚ HAMBURGUESA -->
+        <button class="menu-btn" onclick="toggleMenu()">
+            ☰ Menú de Navegación
+        </button>
+
+        <h1>Procesamiento de Órdenes (Infraestructura Híbrida N:N)</h1>
+        <p>Carrito de compras multi-servidor capaz de asociar videojuegos de diferentes bases de datos simultáneamente.</p>
+        
+        {% if mensaje %}
+            <div class="alert">{{ mensaje }}</div>
+        {% endif %}
+
+        <div class="card-box">
+            <h3 style="margin-top: 0;">Generar Nueva Orden Multi-Servidor</h3>
+            <form method="POST">
+                {% csrf_token %}
+                <label>Seleccionar Cliente Destinatario:</label>
+                <select name="cliente_id" required>
+                    <option value="">-- Seleccione un Gamertag --</option>
+                    {% for c in clientes %}
+                        <option value="{{ c.id }}">{{ c.gamertag }} ({{ c.nombre }})</option>
+                    {% endfor %}
+                </select>
+
+                <label style="margin-top: 15px;">Seleccionar Videojuegos (Catálogo Global de Todos los Servidores):</label>
+                <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); padding: 14px; border-radius: 10px; background: #f8fafc;">
+                    
+                    <!-- Juegos de PostgreSQL y MySQL -->
+                    {% for p in productos_relacionales %}
+                        <label style="font-weight: normal; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer;">
+                            <input type="checkbox" name="productos_seleccionados" value="{{ p.nombre }}|{{ p.precio }}|{{ p.origen_db }}" style="width: auto;"> 
+                            <span><strong>{{ p.nombre }}</strong> — ${{ p.precio }} USD <small style="color: var(--accent-blue);">({{ p.origen_db }})</small></span>
+                        </label>
+                    {% endfor %}
+
+                    <!-- Juegos de MongoDB (NoSQL) -->
+                    {% for item in productos_nosql %}
+                        <label style="font-weight: normal; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; cursor: pointer;">
+                            <input type="checkbox" name="productos_seleccionados" value="{{ item.titulo }}|{{ item.precio }}|MongoDB (NoSQL)" style="width: auto;"> 
+                            <span><strong>{{ item.titulo }}</strong> — ${{ item.precio }} USD <small style="color: var(--accent-cyan);">(MongoDB Local NoSQL)</small></span>
+                        </label>
+                    {% empty %}
+                        {% if not productos_relacionales %}
+                            <p style="color: var(--text-muted); margin: 0;">No hay videojuegos registrados en el catálogo global.</p>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn-action" style="margin-top: 20px;">Procesar y Registrar Orden Multi-Servidor</button>
+            </form>
+        </div>
+
+        <h3 style="margin-top: 35px;">Historial de Entregas y Órdenes Globales</h3>
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>ID de Orden</th>
+                    <th>Gamertag del Cliente</th>
+                    <th>Videojuegos y Servidor de Origen</th>
+                    <th>Fecha de Registro</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in ordenes %}
+                    <tr>
+                        <td><strong>#{{ o.id }}</strong></td>
+                        <td>{{ o.cliente.gamertag }}</td>
+                        <td>
+                            <ul style="margin: 0; padding-left: 18px;">
+                                {% for item in o.items.all %}
+                                    <li>
+                                        <strong>{{ item.titulo_juego }}</strong> 
+                                        <span style="color: var(--accent-emerald); font-weight: 600;">(${{ item.precio }})</span> 
+                                        <small style="color: var(--text-muted); background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">{{ item.origen_db }}</small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                        <td style="color: var(--text-muted);">{{ o.fecha_orden|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                            <em>No se han procesado órdenes de compra en el sistema todavía.</em>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div>
+            <a href="{% url 'tienda_dashboard' %}" class="btn-volver">← Regresar al Panel Principal</a>
+        </div>
+    </div>
+
+    <!-- MENÚ LATERAL DESLIZANTE -->
+    <div class="sidebar-overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div class="sidebar-drawer" id="sidebar">
+        <div class="sidebar-header">
+            <h3>Glitch Game Hub</h3>
+            <button class="close-btn" onclick="toggleMenu()">✕</button>
+        </div>
+        <div class="sidebar-links">
+            <a href="{% url 'tienda_dashboard' %}" class="sidebar-link">📊 Dashboard General <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_clientes' %}" class="sidebar-link">👤 Directorio Clientes (1:1) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_catalogo' %}" class="sidebar-link">🕹️ Gestión de Catálogo (1:N) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_ordenes' %}" class="sidebar-link">🛒 Procesamiento Órdenes (N:N) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_servidores' %}" class="sidebar-link">🗄️ Infraestructura Híbrida <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_metricas' %}" class="sidebar-link">📈 Telemetría y Métricas <span class="arrow">→</span></a>
+        </div>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

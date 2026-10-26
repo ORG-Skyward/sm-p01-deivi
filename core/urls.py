@@ -6,8 +6,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('calculadora.urls')),
+    path('tienda/', include('tienda.urls')),
 ]
 
-# Permitir servir archivos multimedia subidos durante el desarrollo local
+# Esto permite que Django muestre las imágenes subidas en la carpeta media
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

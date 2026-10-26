@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Telemetría y Métricas - Glitch Game Hub</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'tienda/css/tienda_style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- BOTÓN DE MENÚ HAMBURGUESA -->
+        <button class="menu-btn" onclick="toggleMenu()">
+            ☰ Menú de Navegación
+        </button>
+
+        <h1>Telemetría y Métricas del Sistema</h1>
+        <p>Resumen analítico y volumétrico del rendimiento de la plataforma Glitch Game Hub.</p>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Videojuegos Globales</h3>
+                <div class="stat-number">{{ total_general }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Juegos en Bases Relacionales</h3>
+                <div class="stat-number">{{ total_relacionales }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Juegos en MongoDB (NoSQL)</h3>
+                <div class="stat-number">{{ total_nosql }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Clientes Registrados</h3>
+                <div class="stat-number">{{ clientes_count }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Órdenes Procesadas</h3>
+                <div class="stat-number">{{ ordenes_count }}</div>
+            </div>
+        </div>
+
+        <a href="{% url 'tienda_dashboard' %}" class="btn-volver">← Volver al Dashboard</a>
+    </div>
+
+    <!-- MENÚ LATERAL DESLIZANTE -->
+    <div class="sidebar-overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div class="sidebar-drawer" id="sidebar">
+        <div class="sidebar-header">
+            <h3>Glitch Game Hub</h3>
+            <button class="close-btn" onclick="toggleMenu()">✕</button>
+        </div>
+        <div class="sidebar-links">
+            <a href="{% url 'tienda_dashboard' %}" class="sidebar-link">📊 Dashboard General <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_clientes' %}" class="sidebar-link">👤 Directorio Clientes (1:1) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_catalogo' %}" class="sidebar-link">🕹️ Gestión de Catálogo (1:N) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_ordenes' %}" class="sidebar-link">🛒 Procesamiento Órdenes (N:N) <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_servidores' %}" class="sidebar-link">🗄️ Infraestructura Híbrida <span class="arrow">→</span></a>
+            <a href="{% url 'tienda_metricas' %}" class="sidebar-link">📈 Telemetría y Métricas <span class="arrow">→</span></a>
+        </div>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
