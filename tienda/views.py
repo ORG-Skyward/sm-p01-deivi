@@ -14,26 +14,32 @@ from .models import (
 
 def get_productos_hibridos():
     """
-    Obtiene y unifica los productos de PostgreSQL, MySQL y MongoDB (NoSQL)
-    con un timeout rápido para evitar bloqueos en entornos cloud como Render.
+    Obtiene y unifica los productos asignando su origen de forma dinámica,
+    evitando problemas de columnas físicas en las bases relacionales.
     """
     productos_rel = []
     productos_nosql = []
 
-    # 1. Obtener productos de PostgreSQL (Base de datos por defecto)
+    # 1. Obtener productos de PostgreSQL (Base por defecto)
     try:
-        productos_rel.extend(list(ProductoGaming.objects.using('default').all()))
+        prods_pg = list(ProductoGaming.objects.using('default').all())
+        for p in prods_pg:
+            p.origen_db = 'PostgreSQL'  # Asignación dinámica
+        productos_rel.extend(prods_pg)
     except Exception as e:
         print(f"[ERROR BD] PostgreSQL: {e}")
 
-    # 2. Obtener productos de MySQL (Base de datos secundaria mysql_db)
+    # 2. Obtener productos de MySQL (Base secundaria)
     if 'mysql_db' in connections:
         try:
-            productos_rel.extend(list(ProductoGaming.objects.using('mysql_db').all()))
+            prods_mysql = list(ProductoGaming.objects.using('mysql_db').all())
+            for p in prods_mysql:
+                p.origen_db = 'MySQL Workbench'  # Asignación dinámica
+            productos_rel.extend(prods_mysql)
         except Exception as e:
             print(f"[ERROR BD] MySQL Workbench: {e}")
 
-    # 3. Obtener productos de MongoDB NoSQL (Protegido con timeout para producción)
+    # 3. Obtener productos de MongoDB NoSQL
     try:
         mongo_uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
         client = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=2000)
@@ -49,8 +55,6 @@ def get_productos_hibridos():
             )
             nombre_juego = raw_nombre if (raw_nombre and str(raw_nombre).strip()) else "Juego sin título (Mongo)"
             precio_juego = doc.get('precio') or doc.get('price') or 0.00
-            
-            # Recuperamos la ruta o nombre de la imagen guardada en Mongo
             ruta_imagen = doc.get('ruta') or doc.get('imagen', None)
             
             productos_nosql.append({
@@ -58,12 +62,12 @@ def get_productos_hibridos():
                 'nombre': nombre_juego,
                 'titulo': nombre_juego,
                 'precio': float(precio_juego),
-                'origen_db': doc.get('origen_db', 'MongoDB Local NoSQL'),
+                'origen_db': 'MongoDB Local NoSQL',
                 'ruta': ruta_imagen,
                 'imagen': ruta_imagen
             })
     except Exception as e:
-        print(f"[AVISO BD] MongoDB no disponible en este entorno: {e}")
+        print(f"[AVISO BD] MongoDB no disponible: {e}")
 
     return productos_rel, productos_nosql
 
@@ -272,7 +276,7 @@ def ordenes_view(request):
 
 
 def servidores_view(request):
-    """Vista del Estado de los Servidores de Base de Datos."""
+    """Vista del Estado de los Servidores de Base de Datos y su inventario global."""
     estado_postgres = True
     estado_mysql = False
 
@@ -288,9 +292,14 @@ def servidores_view(request):
         except Exception:
             estado_mysql = False
 
+    # Obtener y unificar los productos de todas las bases de datos
+    prods_rel, prods_nosql = get_productos_hibridos()
+
     context = {
         'estado_postgres': estado_postgres,
         'estado_mysql': estado_mysql,
+        'productos_relacionales': prods_rel,
+        'productos_nosql': prods_nosql,
     }
     return render(request, 'tienda/servidores.html', context)
 

@@ -18,25 +18,43 @@
         
         <h3>Inventario Global por Base de Datos y Nodo</h3>
         <table class="table-custom">
-            <tr><th>Videojuego</th><th>Precio</th><th>Servidor de Origen</th></tr>
-            {% for p in productos_relacionales %}
+            <thead>
                 <tr>
-                    <td>{{ p.nombre }}</td>
-                    <td>${{ p.precio }} USD</td>
-                    <td><span style="color:var(--accent-blue); font-weight:bold;">{{ p.origen_db }}</span></td>
+                    <th>Videojuego</th>
+                    <th>Precio</th>
+                    <th>Servidor de Origen</th>
                 </tr>
-            {% endfor %}
-            {% for item in productos_nosql %}
-                <tr>
-                    <td>{{ item.titulo }}</td>
-                    <td>${{ item.precio }} USD</td>
-                    <td><span style="color:var(--accent-cyan); font-weight:bold;">MongoDB Local (NoSQL)</span></td>
-                </tr>
-            {% empty %}
-                <tr><td colspan="3">No hay registros almacenados en los servidores.</td></tr>
-            {% endfor %}
+            </thead>
+            <tbody>
+                {% for p in productos_relacionales %}
+                    <tr>
+                        <td><strong>{{ p.nombre }}</strong></td>
+                        <td>${{ p.precio }} USD</td>
+                        <td><span style="color:var(--accent-blue); font-weight:bold;">{{ p.origen_db }}</span></td>
+                    </tr>
+                {% endfor %}
+                
+                {% for item in productos_nosql %}
+                    <tr>
+                        <td><strong>{{ item.titulo }}</strong></td>
+                        <td>${{ item.precio }} USD</td>
+                        <td><span style="color:var(--accent-cyan); font-weight:bold;">{{ item.origen_db }}</span></td>
+                    </tr>
+                {% empty %}
+                    {% if not productos_relacionales %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                                <em>No hay registros almacenados en los servidores.</em>
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
         </table>
-        <a href="{% url 'tienda_dashboard' %}" class="btn-volver">← Volver al Dashboard</a>
+
+        <div style="margin-top: 25px;">
+            <a href="{% url 'tienda_dashboard' %}" class="btn-volver">← Volver al Dashboard</a>
+        </div>
     </div>
 
     <!-- MENÚ LATERAL DESLIZANTE -->
