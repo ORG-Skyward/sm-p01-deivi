@@ -1,6 +1,7 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.db import connections
 from django.db.utils import OperationalError
+import pymongo
 from .models import (
     ClienteGamer, 
     PerfilVIP, 
@@ -12,60 +13,165 @@ from .models import (
 
 def get_productos_hibridos():
     """
-    Obtiene los productos de la base de datos principal (PostgreSQL)
-    y gestiona la conexion a la base de datos secundaria (MySQL) 
-    evitando que la app falle si MySQL no esta accesible en Render.
+    Obtiene y unifica los productos de PostgreSQL, MySQL y MongoDB (NoSQL)
+    blindando la lectura de campos para que nunca aparezcan vacíos.
     """
     productos_rel = []
     productos_nosql = []
 
     # 1. Obtener productos de PostgreSQL (Base de datos por defecto)
     try:
-        productos_rel = list(ProductoGaming.objects.using('default').all())
+        productos_rel.extend(list(ProductoGaming.objects.using('default').all()))
     except Exception as e:
-        print(f"Error al consultar PostgreSQL: {e}")
-        productos_rel = []
+        print(f"[ERROR BD] PostgreSQL: {e}")
 
-    # 2. Intentar obtener productos de MySQL (si esta configurada en settings.py)
-    if 'mysql' in connections:
+    # 2. Obtener productos de MySQL (Base de datos secundaria mysql_db)
+    if 'mysql_db' in connections:
         try:
-            productos_nosql = list(ProductoGaming.objects.using('mysql').all())
-        except (OperationalError, Exception) as e:
-            print(f"Aviso: Servidor MySQL no disponible en produccion ({e}). Usando lista de respaldo.")
-            productos_nosql = []
-    else:
-        # Si no hay alias 'mysql' en DATABASES, mantenemos la lista vacia para evitar excepciones
-        productos_nosql = []
+            productos_rel.extend(list(ProductoGaming.objects.using('mysql_db').all()))
+        except Exception as e:
+            print(f"[ERROR BD] MySQL Workbench: {e}")
+
+    # 3. Obtener productos de MongoDB NoSQL (Blindado y compatible)
+    try:
+        client = pymongo.MongoClient('mongodb://localhost:27017/')
+        db = client['glitch_game_db']
+        for doc in db['productos'].find():
+            raw_nombre = (
+                doc.get('nombre') or 
+                doc.get('titulo') or 
+                doc.get('game_name') or 
+                doc.get('name')
+            )
+            nombre_juego = raw_nombre if (raw_nombre and str(raw_nombre).strip()) else "Juego sin título (Mongo)"
+            precio_juego = doc.get('precio') or doc.get('price') or 0.00
+            
+            productos_nosql.append({
+                'id': str(doc.get('_id')),
+                'nombre': nombre_juego,
+                'titulo': nombre_juego,
+                'precio': float(precio_juego),
+                'origen_db': doc.get('origen_db', 'MongoDB Local NoSQL'),
+                'imagen': doc.get('imagen', None)
+            })
+    except Exception as e:
+        print(f"[AVISO BD] MongoDB no disponible: {e}")
 
     return productos_rel, productos_nosql
+
 
 def dashboard_view(request):
     """Vista principal del Dashboard del Admin Panel."""
     prods_rel, prods_nosql = get_productos_hibridos()
+    total_juegos = len(prods_rel) + len(prods_nosql)
+    ultimas_ordenes = OrdenCompra.objects.prefetch_related('items').order_by('-fecha_orden')[:5]
+    for ord_obj in ultimas_ordenes:
+        ord_obj.total_orden = sum(float(item.precio) for item in ord_obj.items.all())
     
     context = {
-        'productos_rel': prods_rel,
+        'productos_relacionales': prods_rel,
         'productos_nosql': prods_nosql,
+        'total_juegos': total_juegos,
         'total_clientes': ClienteGamer.objects.count(),
         'total_ordenes': OrdenCompra.objects.count(),
+        'ultimas_ordenes': ultimas_ordenes,
     }
     return render(request, 'tienda/dashboard.html', context)
 
 
 def clientes_view(request):
-    """Vista para gestion de Clientes Gamer y Perfiles VIP."""
+    """Vista para gestión y creación de Clientes Gamer y Perfiles VIP (Relación 1:1)."""
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre_cliente')
+        gamertag = request.POST.get('gamertag')
+        rango = request.POST.get('rango_vip', 'Bronce')
+        
+        if nombre and gamertag:
+            cliente, created = ClienteGamer.objects.get_or_create(
+                gamertag=gamertag,
+                defaults={'nombre': nombre}
+            )
+            PerfilVIP.objects.update_or_create(
+                cliente=cliente,
+                defaults={'rango': rango}
+            )
+            print(f"[VERIFICACIÓN BD] Cliente VIP guardado: {gamertag} ({nombre})")
+            return redirect(request.path)
+
     clientes = ClienteGamer.objects.all()
     context = {'clientes': clientes}
     return render(request, 'tienda/clientes.html', context)
 
 
 def catalogo_view(request):
-    """Vista del Catalogo de Productos Hibrido."""
+    """Vista del Catálogo Híbrido y creación en PostgreSQL, MySQL o MongoDB."""
+    if request.method == 'POST':
+        if 'crear_categoria' in request.POST or request.POST.get('nombre_categoria'):
+            nombre_cat = request.POST.get('nombre_categoria')
+            if nombre_cat:
+                cat, created = CategoriaJuego.objects.get_or_create(nombre=nombre_cat)
+                print(f"[VERIFICACIÓN BD] Categoría creada/encontrada: {cat.nombre}")
+                
+        elif 'subir_videojuego' in request.POST or request.POST.get('titulo'):
+            nombre = request.POST.get('titulo')
+            precio = request.POST.get('precio')
+            categoria_id = request.POST.get('categoria_id')
+            db_choice = request.POST.get('db_choice', 'default')
+            
+            if nombre and precio:
+                if db_choice == 'mongo_db':
+                    try:
+                        client = pymongo.MongoClient('mongodb://localhost:27017/')
+                        db = client['glitch_game_db']
+                        db['productos'].insert_one({
+                            "nombre": nombre,
+                            "titulo": nombre,
+                            "precio": float(precio),
+                            "categoria_id": categoria_id,
+                            "origen_db": "MongoDB Local NoSQL"
+                        })
+                        print(f"[VERIFICACIÓN BD] 🚀 '{nombre}' guardado en MongoDB.")
+                    except Exception as e:
+                        print(f"[ERROR MONGODB] {e}")
+
+                elif db_choice == 'mysql_db' and 'mysql_db' in connections:
+                    try:
+                        categoria = CategoriaJuego.objects.using('mysql_db').filter(id=categoria_id).first()
+                        if not categoria:
+                            categoria, _ = CategoriaJuego.objects.using('mysql_db').get_or_create(nombre="General")
+
+                        ProductoGaming.objects.using('mysql_db').create(
+                            nombre=nombre,
+                            precio=precio,
+                            categoria=categoria,
+                            origen_db='MySQL Workbench'
+                        )
+                        print(f"[VERIFICACIÓN BD] 🚀 '{nombre}' guardado en MySQL Workbench.")
+                    except Exception as ex:
+                        print(f"[ERROR MYSQL] {ex}")
+
+                else:
+                    categoria = CategoriaJuego.objects.filter(id=categoria_id).first()
+                    if not categoria:
+                        categoria = CategoriaJuego.objects.first()
+                        if not categoria:
+                            categoria = CategoriaJuego.objects.create(nombre="General")
+                    
+                    ProductoGaming.objects.using('default').create(
+                        nombre=nombre,
+                        precio=precio,
+                        categoria=categoria,
+                        origen_db='PostgreSQL'
+                    )
+                    print(f"[VERIFICACIÓN BD] 🚀 '{nombre}' guardado en PostgreSQL.")
+
+        return redirect(request.path)
+
     prods_rel, prods_nosql = get_productos_hibridos()
     categorias = CategoriaJuego.objects.all()
     
     context = {
-        'productos_rel': prods_rel,
+        'productos_relacionales': prods_rel,
         'productos_nosql': prods_nosql,
         'categorias': categorias,
     }
@@ -73,15 +179,78 @@ def catalogo_view(request):
 
 
 def ordenes_view(request):
-    """Vista de Ordenes de Compra registradas."""
+    """Vista de Órdenes de Compra utilizando los valores empaquetados del formulario HTML."""
+    if request.method == 'POST':
+        print(f"[DEBUG POST ORDEN]: {request.POST}")
+        
+        # Obtener el cliente mediante el ID enviado por el HTML (<select name="cliente_id">)
+        cliente_id = request.POST.get('cliente_id')
+        cliente = None
+        if cliente_id and cliente_id.isdigit():
+            cliente = ClienteGamer.objects.filter(id=cliente_id).first()
+
+        if cliente:
+            # Crear la orden principal
+            orden = OrdenCompra.objects.create(cliente=cliente)
+            
+            # Capturar los productos empaquetados que vienen del checkbox: nombre|precio|origen
+            productos_raw = request.POST.getlist('productos_seleccionados')
+            
+            items_creados = 0
+            if productos_raw:
+                for item_str in productos_raw:
+                    partes = item_str.split('|')
+                    if len(partes) == 3:
+                        titulo = partes[0]
+                        try:
+                            precio = float(partes[1])
+                        except ValueError:
+                            precio = 0.00
+                        origen = partes[2]
+                        
+                        ItemOrden.objects.create(
+                            orden=orden,
+                            titulo_juego=titulo,
+                            precio=precio,
+                            origen_db=origen
+                        )
+                        items_creados += 1
+            
+            # Respaldo por si no seleccionó ningún ítem
+            if items_creados == 0:
+                ItemOrden.objects.create(
+                    orden=orden,
+                    titulo_juego="Videojuego Asignado",
+                    precio=0.00,
+                    origen_db='Catálogo Global'
+                )
+
+            print(f"[VERIFICACIÓN BD] 🎉 Orden #{orden.id} creada para {cliente.gamertag} con {items_creados} ítems.")
+        else:
+            print(f"[ERROR ORDEN] No se encontró el cliente con el ID '{cliente_id}'.")
+
+        return redirect(request.path)
+
+    prods_rel, prods_nosql = get_productos_hibridos()
     ordenes = OrdenCompra.objects.prefetch_related('items').all()
-    context = {'ordenes': ordenes}
+    
+    # Calcular el precio total acumulado para cada orden en el historial
+    for ord_obj in ordenes:
+        ord_obj.total_orden = sum(float(item.precio) for item in ord_obj.items.all())
+
+    clientes = ClienteGamer.objects.all()
+    
+    context = {
+        'ordenes': ordenes,
+        'clientes': clientes,
+        'productos_relacionales': prods_rel,
+        'productos_nosql': prods_nosql,
+    }
     return render(request, 'tienda/ordenes.html', context)
 
 
 def servidores_view(request):
     """Vista del Estado de los Servidores de Base de Datos."""
-    # Verificacion del estado de las conexiones
     estado_postgres = True
     estado_mysql = False
 
@@ -90,9 +259,9 @@ def servidores_view(request):
     except Exception:
         estado_postgres = False
 
-    if 'mysql' in connections:
+    if 'mysql_db' in connections:
         try:
-            connections['mysql'].cursor()
+            connections['mysql_db'].cursor()
             estado_mysql = True
         except Exception:
             estado_mysql = False
@@ -105,9 +274,13 @@ def servidores_view(request):
 
 
 def metricas_view(request):
-    """Vista de Metricas y Analitica del Sistema."""
+    """Vista de Métricas y Analítica del Sistema."""
+    prods_rel, prods_nosql = get_productos_hibridos()
     context = {
-        'total_productos': ProductoGaming.objects.count(),
-        'total_ventas': ItemOrden.objects.count(),
+        'total_general': len(prods_rel) + len(prods_nosql),
+        'total_relacionales': len(prods_rel),
+        'total_nosql': len(prods_nosql),
+        'clientes_count': ClienteGamer.objects.count(),
+        'ordenes_count': OrdenCompra.objects.count(),
     }
     return render(request, 'tienda/metricas.html', context)
