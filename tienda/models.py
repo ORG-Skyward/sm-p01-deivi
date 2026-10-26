@@ -1,47 +1,51 @@
 from django.db import models
 
-class PerfilVIP(models.Model):
-    rango = models.CharField(max_length=50)
-    descuento_porcentaje = models.IntegerField(default=5)
-
-    def __str__(self):
-        return f"{self.rango} ({self.descuento_porcentaje}%)"
-
 class ClienteGamer(models.Model):
     nombre = models.CharField(max_length=100)
     gamertag = models.CharField(max_length=100, unique=True)
-    perfil_vip = models.OneToOneField(PerfilVIP, on_delete=models.CASCADE, null=True, blank=True)
-
+    
     def __str__(self):
-        return f"{self.gamertag} - {self.nombre}"
+        return self.gamertag
+
+class PerfilVIP(models.Model):
+    cliente = models.OneToOneField(ClienteGamer, on_delete=models.CASCADE, related_name='perfil_vip', null=True, blank=True)
+    rango = models.CharField(max_length=50, default='Bronce')
+    
+    def __str__(self):
+        return f"{self.cliente.gamertag if self.cliente else 'Sin cliente'} - {self.rango}"
 
 class CategoriaJuego(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
-
+    
     def __str__(self):
         return self.nombre
 
 class ProductoGaming(models.Model):
-    nombre = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=200)
+    categoria = models.ForeignKey(CategoriaJuego, on_delete=models.CASCADE, related_name='productos')
     precio = models.DecimalField(max_digits=10, decimal_places=2)
-    categoria = models.ForeignKey(CategoriaJuego, on_delete=models.CASCADE)
-    imagen = models.ImageField(upload_to='portadas/', null=True, blank=True)
+    imagen = models.ImageField(upload_to='productos/', blank=True, null=True)
+    origen_db = models.CharField(max_length=50, default='PostgreSQL')
+
+    class Meta:
+        verbose_name = "Producto Gaming"
+        verbose_name_plural = "Productos Gaming"
 
     def __str__(self):
-        return self.nombre
+        return f"{self.nombre} (${self.precio})"
 
 class OrdenCompra(models.Model):
+    cliente = models.ForeignKey(ClienteGamer, on_delete=models.CASCADE, related_name='ordenes')
     fecha_orden = models.DateTimeField(auto_now_add=True)
-    cliente = models.ForeignKey(ClienteGamer, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"Orden #{self.id} - {self.cliente.gamertag}"
 
 class ItemOrden(models.Model):
     orden = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE, related_name='items')
-    titulo_juego = models.CharField(max_length=100)
+    titulo_juego = models.CharField(max_length=200)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
-    origen_db = models.CharField(max_length=100)
+    origen_db = models.CharField(max_length=50)
 
     def __str__(self):
-        return f"{self.titulo_juego} (${self.precio}) [{self.origen_db}]"
+        return f"{self.titulo_juego} ({self.origen_db})"
