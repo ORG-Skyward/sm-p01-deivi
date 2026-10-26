@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_dict if False else get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.db import connections
 from django.db.utils import OperationalError
 from .models import (
@@ -38,7 +38,6 @@ def get_productos_hibridos():
         productos_nosql = []
 
     return productos_rel, productos_nosql
-
 
 def dashboard_view(request):
     """Vista principal del Dashboard del Admin Panel."""
