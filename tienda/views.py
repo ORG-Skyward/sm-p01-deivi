@@ -35,11 +35,8 @@ def get_productos_hibridos():
 
     # 3. Obtener productos de MongoDB NoSQL (Protegido con timeout para producción)
     try:
-        # Lee la variable de entorno MONGO_URI si existe (en Render), o usa localhost por defecto
         mongo_uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
         client = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=2000)
-        
-        # Forzar un ping rápido para comprobar conexión
         client.admin.command('ping')
         
         db = client['glitch_game_db']
@@ -53,16 +50,19 @@ def get_productos_hibridos():
             nombre_juego = raw_nombre if (raw_nombre and str(raw_nombre).strip()) else "Juego sin título (Mongo)"
             precio_juego = doc.get('precio') or doc.get('price') or 0.00
             
+            # Recuperamos la ruta o nombre de la imagen guardada en Mongo
+            ruta_imagen = doc.get('ruta') or doc.get('imagen', None)
+            
             productos_nosql.append({
                 'id': str(doc.get('_id')),
                 'nombre': nombre_juego,
                 'titulo': nombre_juego,
                 'precio': float(precio_juego),
                 'origen_db': doc.get('origen_db', 'MongoDB Local NoSQL'),
-                'imagen': doc.get('imagen', None)
+                'ruta': ruta_imagen,
+                'imagen': ruta_imagen
             })
     except Exception as e:
-        # Si no hay MongoDB accesible (como en Render), la app continúa sin dar error 500
         print(f"[AVISO BD] MongoDB no disponible en este entorno: {e}")
 
     return productos_rel, productos_nosql
@@ -112,7 +112,7 @@ def clientes_view(request):
 
 
 def catalogo_view(request):
-    """Vista del Catálogo Híbrido y creación en PostgreSQL, MySQL o MongoDB."""
+    """Vista del Catálogo Híbrido y creación en PostgreSQL, MySQL o MongoDB con soporte para 'archivo'."""
     if request.method == 'POST':
         if 'crear_categoria' in request.POST or request.POST.get('nombre_categoria'):
             nombre_cat = request.POST.get('nombre_categoria')
@@ -126,39 +126,54 @@ def catalogo_view(request):
             categoria_id = request.POST.get('categoria_id')
             db_choice = request.POST.get('db_choice', 'default')
             
+            # Capturamos el archivo usando el nombre exacto del input HTML: 'archivo'
+            imagen_file = request.FILES.get('archivo')
+            
             if nombre and precio:
+                # --- OPCIÓN A: MONGODB (NoSQL) ---
                 if db_choice == 'mongo_db':
                     try:
                         mongo_uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
                         client = pymongo.MongoClient(mongo_uri, serverSelectionTimeoutMS=2000)
                         db = client['glitch_game_db']
+                        
+                        img_name = imagen_file.name if imagen_file else None
+                        
                         db['productos'].insert_one({
                             "nombre": nombre,
                             "titulo": nombre,
                             "precio": float(precio),
                             "categoria_id": categoria_id,
-                            "origen_db": "MongoDB Local NoSQL"
+                            "origen_db": "MongoDB Local NoSQL",
+                            "ruta": img_name,
+                            "imagen": img_name
                         })
-                        print(f"[VERIFICACIÓN BD] 🚀 '{nombre}' guardado en MongoDB.")
+                        print(f"[VERIFICACIÓN BD] 🚀 '{nombre}' guardado en MongoDB con archivo: {img_name}")
                     except Exception as e:
                         print(f"[ERROR MONGODB] {e}")
 
+                # --- OPCIÓN B: MYSQL ---
                 elif db_choice == 'mysql_db' and 'mysql_db' in connections:
                     try:
                         categoria = CategoriaJuego.objects.using('mysql_db').filter(id=categoria_id).first()
                         if not categoria:
                             categoria, _ = CategoriaJuego.objects.using('mysql_db').get_or_create(nombre="General")
 
-                        ProductoGaming.objects.using('mysql_db').create(
-                            nombre=nombre,
-                            precio=precio,
-                            categoria=categoria,
-                            origen_db='MySQL Workbench'
-                        )
+                        kwargs = {
+                            'nombre': nombre,
+                            'precio': precio,
+                            'categoria': categoria,
+                            'origen_db': 'MySQL Workbench'
+                        }
+                        if imagen_file:
+                            kwargs['imagen'] = imagen_file
+
+                        ProductoGaming.objects.using('mysql_db').create(**kwargs)
                         print(f"[VERIFICACIÓN BD] 🚀 '{nombre}' guardado en MySQL Workbench.")
                     except Exception as ex:
                         print(f"[ERROR MYSQL] {ex}")
 
+                # --- OPCIÓN C: POSTGRESQL (Default) ---
                 else:
                     categoria = CategoriaJuego.objects.filter(id=categoria_id).first()
                     if not categoria:
@@ -166,12 +181,16 @@ def catalogo_view(request):
                         if not categoria:
                             categoria = CategoriaJuego.objects.create(nombre="General")
                     
-                    ProductoGaming.objects.using('default').create(
-                        nombre=nombre,
-                        precio=precio,
-                        categoria=categoria,
-                        origen_db='PostgreSQL'
-                    )
+                    kwargs = {
+                        'nombre': nombre,
+                        'precio': precio,
+                        'categoria': categoria,
+                        'origen_db': 'PostgreSQL'
+                    }
+                    if imagen_file:
+                        kwargs['imagen'] = imagen_file
+
+                    ProductoGaming.objects.using('default').create(**kwargs)
                     print(f"[VERIFICACIÓN BD] 🚀 '{nombre}' guardado en PostgreSQL.")
 
         return redirect(request.path)
